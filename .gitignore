@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+env/
+venv/
+ENV/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+
+# Django
+local_settings.py
+media/
+staticfiles/
+
+# Environments / secrets
+.env
+.env.* 
+*.env
+
+# Mac / Editor files
+.DS_Store
+*.swp
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# OS
+Thumbs.db

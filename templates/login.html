@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div style="max-width:400px; margin:50px auto; padding:20px; border:1px solid #ccc; border-radius:8px; background:#fff;">
+  <h2 style="text-align:center; margin-bottom:20px;">Login</h2>
+  <form id="login-form">
+    <div style="margin-bottom:15px;">
+      <label>Username:</label><br>
+      <input type="text" id="username" style="width:100%; padding:8px; border:1px solid #aaa; border-radius:4px;" required>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label>Password:</label><br>
+      <input type="password" id="password" style="width:100%; padding:8px; border:1px solid #aaa; border-radius:4px;" required>
+    </div>
+    <button type="submit" style="width:100%; padding:10px; border:none; border-radius:4px; background:#4CAF50; color:white;">Login</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  try{
+    const res = await axios.post('/api/token/', {username, password});
+    localStorage.setItem('access_token', res.data.access);
+    localStorage.setItem('refresh_token', res.data.refresh);
+    alert('Login successful');
+    window.location = '/employees/list/';
+  } catch(err){
+    if (err.response) {
+      let message = '';
+      for (let key in err.response.data) message += `${key}: ${err.response.data[key]}\n`;
+      alert(`Login failed:\n${message}`);
+    } else if (err.request) {
+      alert('No response from server.');
+    } else {
+      alert(`Error: ${err.message}`);
+    }
+  }
+});
+</script>
+{% endblock %}

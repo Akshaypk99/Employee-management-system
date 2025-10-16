@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Create Employee{% endblock %}
+{% block content %}
+<div style="max-width:600px; margin:20px auto; padding:20px; border:1px solid #ccc; border-radius:8px; background:#fff;">
+  <h2>Create Employee</h2>
+
+  <select id="template-select" style="width:100%; padding:8px; margin-bottom:15px;"></select>
+
+  <form id="employee-form">
+    <div id="dynamic-fields"></div>
+    <button type="submit" style="padding:10px 15px; margin-top:15px; border:none; border-radius:4px; background:#4CAF50; color:white;">
+      Save Employee
+    </button>
+  </form>
+</div>
+
+<script>
+async function loadTemplates() {
+  const token = localStorage.getItem('access_token');
+  const res = await axios.get('/api/forms/', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const select = document.getElementById('template-select');
+  select.innerHTML = '';
+
+  res.data.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.text = t.name;
+    select.appendChild(opt);
+  });
+
+  if (res.data.length) {
+    select.value = res.data[0].id;
+    renderForm(res.data[0]);
+  }
+
+  select.addEventListener('change', () => {
+    const selected = res.data.find(x => x.id == select.value);
+    renderForm(selected);
+  });
+}
+
+function renderForm(template) {
+  const container = document.getElementById('dynamic-fields');
+  container.innerHTML = '';
+
+  template.fields.forEach(f => {
+    const div = document.createElement('div');
+    div.style = 'margin-bottom:10px;';
+    div.innerHTML = `
+      <label>${f.label}:
+        <input name="${f.label}" data-label="${f.label}" type="${f.type}"
+          style="width:100%; padding:8px; border:1px solid #aaa; border-radius:4px;">
+      </label>
+    `;
+    container.appendChild(div);
+  });
+}
+
+document.getElementById('employee-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const token = localStorage.getItem('access_token');
+  const formId = document.getElementById('template-select').value;
+  const inputs = document.querySelectorAll('#dynamic-fields input');
+  const data = {};
+
+  inputs.forEach(i => data[i.dataset.label] = i.value);
+
+  try {
+    await axios.post('/api/employees/', { form: formId, data }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    alert('Employee saved successfully');
+    window.location = '/employees/list/';
+  } catch (err) {
+    if (err.response) {
+      let msg = '';
+      for (let key in err.response.data) msg += `${key}: ${err.response.data[key]}\n`;
+      alert(`Error saving employee:\n${msg}`);
+    } else {
+      alert('Error saving employee');
+    }
+  }
+});
+
+loadTemplates();
+</script>
+{% endblock %}

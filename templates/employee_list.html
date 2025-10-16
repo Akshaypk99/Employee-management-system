@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Employees{% endblock %}
+{% block content %}
+<h2>Employees</h2>
+<div style="margin-bottom:15px;">
+  <input id="q" placeholder="Search..." style="padding:6px; width:200px;">
+  <button id="search" style="padding:6px 10px;">Search</button>
+  <a href="/employees/create/"><button style="padding:6px 10px;">Add Employee</button></a>
+</div>
+
+<div id="list" style="display:flex; flex-wrap:wrap; gap:15px;"></div>
+
+<script>
+async function load(q='') {
+  const token = localStorage.getItem('access_token');
+  const res = await axios.get(`/api/employees/?search=${encodeURIComponent(q)}`, { headers:{Authorization:`Bearer ${token}`} });
+  const container = document.getElementById('list');
+  container.innerHTML = '';
+  if(res.data.length===0) return container.innerHTML='<p>No employees found.</p>';
+  res.data.forEach(emp=>{
+    const card = document.createElement('div');
+    card.style='border:1px solid #ccc; border-radius:8px; padding:10px; width:250px; box-shadow:0 2px 4px rgba(0,0,0,0.1);';
+    let html = `<h3>Employee #${emp.id}</h3>`;
+    for(const [k,v] of Object.entries(emp.data||{})) html+=`<div><strong>${k}</strong>: ${v}</div>`;
+    html+=`<div style="margin-top:10px;">
+      <a href="/employees/edit/${emp.id}/"><button>Edit</button></a>
+      <button class="del" data-id="${emp.id}">Delete</button>
+    </div>`;
+    card.innerHTML = html; container.appendChild(card);
+  });
+}
+
+document.getElementById('search').addEventListener('click', ()=>load(document.getElementById('q').value));
+document.addEventListener('click', async e=>{
+  if(e.target.classList.contains('del')){
+    if(!confirm('Delete this employee?')) return;
+    const id=e.target.dataset.id;
+    const token=localStorage.getItem('access_token');
+    await axios.delete(`/api/employees/${id}/`, { headers:{Authorization:`Bearer ${token}` } });
+    load(document.getElementById('q').value);
+  }
+});
+
+load();
+</script>
+{% endblock %}

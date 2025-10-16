@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div style="max-width:400px; margin:50px auto; padding:20px; border:1px solid #ccc; border-radius:8px; background:#fff;">
+  <h2 style="text-align:center; margin-bottom:20px;">Profile</h2>
+  <div id="profile"></div>
+</div>
+
+<script>
+async function loadProfile(){
+  const token = localStorage.getItem('access_token');
+  const res = await axios.get('/api/auth/profile/', { headers: { Authorization: `Bearer ${token}` }});
+  const p = res.data;
+  document.getElementById('profile').innerHTML = `
+    <p><strong>ID:</strong> ${p.id}</p>
+    <p><strong>Username:</strong> ${p.username}</p>
+    <p><strong>Email:</strong> ${p.email}</p>
+  `;
+}
+loadProfile();
+</script>
+{% endblock %}

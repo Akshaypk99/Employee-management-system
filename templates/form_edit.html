@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Edit Form{% endblock %}
+{% block content %}
+<div style="max-width:600px; margin:20px auto; padding:20px; border:1px solid #ccc; border-radius:8px; background:#fff;">
+  <h2>Edit Form</h2>
+  <div style="margin-bottom:10px;">
+    <label>Form Name:</label>
+    <input id="form-name" style="width:100%; padding:8px; margin-top:5px; border:1px solid #aaa; border-radius:4px;">
+  </div>
+
+  <div id="fields-list" style="margin-bottom:15px;"></div>
+
+  <div style="margin-top:10px;">
+    <input id="new-label" placeholder="Field label" style="padding:6px;">
+    <select id="new-type" style="padding:6px;">
+      <option value="text">Text</option>
+      <option value="email">Email</option>
+      <option value="number">Number</option>
+      <option value="date">Date</option>
+      <option value="password">Password</option>
+    </select>
+    <button id="add-field">Add Field</button>
+    <button id="save-form">Save Changes</button>
+  </div>
+</div>
+
+<script>
+const formId = window.location.pathname.split('/')[2];
+let fields = [];
+
+async function loadForm() {
+  const token = localStorage.getItem('access_token');
+  try {
+    const res = await axios.get(`/api/forms/${formId}/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    document.getElementById('form-name').value = res.data.name;
+    fields = res.data.fields || [];
+    renderFields();
+  } catch(err) {
+    alert('Error loading form');
+    console.error(err);
+  }
+}
+
+function renderFields() {
+  const container = document.getElementById('fields-list');
+  container.innerHTML = '';
+  fields.forEach((f, idx) => {
+    const div = document.createElement('div');
+    div.style = 'padding:5px; margin-bottom:5px; border:1px solid #ddd; border-radius:4px; display:flex; justify-content:space-between; align-items:center;';
+    div.innerHTML = `<span>${f.label} - ${f.type}</span>
+                     <button data-idx="${idx}" class="remove">Remove</button>`;
+    container.appendChild(div);
+  });
+  Sortable.create(container, {
+    animation: 150,
+    onEnd: evt => {
+      const item = fields.splice(evt.oldIndex, 1)[0];
+      fields.splice(evt.newIndex, 0, item);
+      renderFields();
+    }
+  });
+}
+
+// Add new field
+document.getElementById('add-field').addEventListener('click', () => {
+  const label = document.getElementById('new-label').value.trim();
+  const type = document.getElementById('new-type').value;
+  if(!label) return alert('Label required');
+  fields.push({ label, type });
+  document.getElementById('new-label').value = '';
+  renderFields();
+});
+
+// Remove field
+document.addEventListener('click', e => {
+  if(e.target.classList.contains('remove')) {
+    const idx = +e.target.dataset.idx;
+    fields.splice(idx, 1);
+    renderFields();
+  }
+});
+
+// Save form changes
+document.getElementById('save-form').addEventListener('click', async () => {
+  const name = document.getElementById('form-name').value.trim();
+  if(!name || fields.length === 0) return alert('Form name and fields required');
+  const token = localStorage.getItem('access_token');
+  try {
+    await axios.put(`/api/forms/${formId}/`, { name, fields }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    alert('Form updated successfully!');
+    window.location = '/forms/html/';
+  } catch(err) {
+    alert('Error updating form');
+    console.error(err);
+  }
+});
+
+loadForm();
+</script>
+{% endblock %}

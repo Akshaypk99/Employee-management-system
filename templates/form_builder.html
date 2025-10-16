@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Form Builder{% endblock %}
+{% block content %}
+<h2>Form Builder</h2>
+<div style="max-width:600px; margin-bottom:20px; padding:15px; border:1px solid #ccc; border-radius:8px; background:#fff;">
+  <h3>Create Form</h3>
+  <label>Form Name:</label>
+  <input id="form-name" style="width:100%; padding:8px; margin:5px 0; border:1px solid #aaa; border-radius:4px;">
+  <div id="fields-list"></div>
+  <div style="margin-top:10px;">
+    <input id="new-label" placeholder="Field label" style="padding:6px;">
+    <select id="new-type" style="padding:6px;">
+      <option value="text">Text</option>
+      <option value="email">Email</option>
+      <option value="number">Number</option>
+      <option value="date">Date</option>
+      <option value="password">Password</option>
+    </select>
+    <button id="add-field">Add Field</button>
+    <button id="save-form">Save</button>
+  </div>
+</div>
+
+<h3>Form Templates</h3>
+<div id="form-list"></div>
+
+<script>
+let fields=[];
+function renderFields(){
+  const c=document.getElementById('fields-list'); c.innerHTML='';
+  fields.forEach((f,i)=>{
+    const div=document.createElement('div');
+    div.style='padding:5px; margin-bottom:5px; border:1px solid #ddd; border-radius:4px;';
+    div.innerHTML=`${f.label} - ${f.type} <button data-i="${i}" class="remove">Remove</button>`;
+    c.appendChild(div);
+  });
+  Sortable.create(c,{animation:150,onEnd:e=>{ const item=fields.splice(e.oldIndex,1)[0]; fields.splice(e.newIndex,0,item); renderFields(); } });
+}
+document.getElementById('add-field').addEventListener('click',()=>{
+  const label=document.getElementById('new-label').value.trim();
+  if(!label)return alert('Label required');
+  fields.push({label,type:document.getElementById('new-type').value});
+  document.getElementById('new-label').value='';
+  renderFields();
+});
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('remove')){ fields.splice(e.target.dataset.i,1); renderFields(); }
+  else if(e.target.classList.contains('del-form')){
+    if(!confirm('Delete this form?')) return;
+    axios.delete(`/api/forms/${e.target.dataset.id}/`, { headers:{ Authorization:`Bearer ${localStorage.getItem('access_token')}` }}).then(()=>loadForms());
+  }
+});
+document.getElementById('save-form').addEventListener('click',()=>{
+  const name=document.getElementById('form-name').value.trim();
+  if(!name || !fields.length) return alert('Name and fields required');
+  axios.post('/api/forms/', {name,fields},{ headers:{ Authorization:`Bearer ${localStorage.getItem('access_token')}` } })
+  .then(()=>{ alert('Saved!'); fields=[]; document.getElementById('form-name').value=''; renderFields(); loadForms(); })
+  .catch(()=>alert('Error saving form'));
+});
+function loadForms(){
+  axios.get('/api/forms/', { headers:{ Authorization:`Bearer ${localStorage.getItem('access_token')}` } })
+  .then(res=>{
+    const list=document.getElementById('form-list'); list.innerHTML='';
+    if(!res.data.length) return list.innerHTML='<p>No forms</p>';
+    res.data.forEach(f=>{
+      const div=document.createElement('div');
+      div.style='border:1px solid #ccc; padding:10px; margin-bottom:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;';
+      div.innerHTML=`<div>${f.name} (${f.fields.length} fields)</div>
+        <div><button onclick="window.location='/forms/${f.id}/edit/'">Edit</button>
+        <button class="del-form" data-id="${f.id}">Delete</button></div>`;
+      list.appendChild(div);
+    });
+  }).catch(()=>document.getElementById('form-list').innerHTML='Error loading forms');
+}
+loadForms();
+</script>
+{% endblock %}
